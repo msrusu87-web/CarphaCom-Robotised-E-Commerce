@@ -22,4 +22,4 @@ export function getPool(): Pool {
   return pool
 }
 
-export const GROQ_API_KEY = 'YOUR_GROQ_API_KEY'
+export const GROQ_API_KEY = ''
