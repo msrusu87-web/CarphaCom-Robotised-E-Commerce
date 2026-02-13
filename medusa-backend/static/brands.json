@@ -1,0 +1,162 @@
+{
+  "brands": [
+    {
+      "name": "Albrecht",
+      "color": "#1E3A5F",
+      "country": "Germania"
+    },
+    {
+      "name": "Alinco",
+      "color": "#CC0000",
+      "country": "Japonia"
+    },
+    {
+      "name": "Anytone",
+      "color": "#FF6600",
+      "country": "China"
+    },
+    {
+      "name": "Avanti",
+      "color": "#E31837",
+      "country": "Rom\u00e2nia"
+    },
+    {
+      "name": "COBRA",
+      "color": "#000000",
+      "country": "USA"
+    },
+    {
+      "name": "CRT France",
+      "color": "#002395",
+      "country": "Fran\u021ba"
+    },
+    {
+      "name": "DYNASCAN",
+      "color": "#00529B",
+      "country": "Spania"
+    },
+    {
+      "name": "Escort",
+      "color": "#1B1B1B",
+      "country": "USA"
+    },
+    {
+      "name": "Hoffman",
+      "color": "#8B0000",
+      "country": "Germania"
+    },
+    {
+      "name": "Jopix",
+      "color": "#004D40",
+      "country": "Spania"
+    },
+    {
+      "name": "Kenwood",
+      "color": "#E60012",
+      "country": "Japonia"
+    },
+    {
+      "name": "LEMM Italy",
+      "color": "#009246",
+      "country": "Italia"
+    },
+    {
+      "name": "Megawat UK",
+      "color": "#C8102E",
+      "country": "UK"
+    },
+    {
+      "name": "Midland",
+      "color": "#00703C",
+      "country": "Italia"
+    },
+    {
+      "name": "Motorola",
+      "color": "#00A2E8",
+      "country": "USA"
+    },
+    {
+      "name": "PNI",
+      "color": "#7B2D8E",
+      "country": "Rom\u00e2nia"
+    },
+    {
+      "name": "President",
+      "color": "#003087",
+      "country": "Fran\u021ba"
+    },
+    {
+      "name": "Radian",
+      "color": "#FF4500",
+      "country": "Rom\u00e2nia"
+    },
+    {
+      "name": "RigExpert",
+      "color": "#2E86AB",
+      "country": "Ucraina"
+    },
+    {
+      "name": "RM Italy",
+      "color": "#009246",
+      "country": "Italia"
+    },
+    {
+      "name": "Sirio Italy",
+      "color": "#CE2B37",
+      "country": "Italia"
+    },
+    {
+      "name": "Stabo",
+      "color": "#1C1C1C",
+      "country": "Germania"
+    },
+    {
+      "name": "Storm",
+      "color": "#4A4A4A",
+      "country": "Rom\u00e2nia"
+    },
+    {
+      "name": "Whistler",
+      "color": "#B22234",
+      "country": "USA"
+    },
+    {
+      "name": "Yosan",
+      "color": "#FFA500",
+      "country": "China"
+    },
+    {
+      "name": "Zetagi",
+      "color": "#008C45",
+      "country": "Italia"
+    }
+  ],
+  "logos": {
+    "Albrecht": "https://your-cdn.com/static/brand_albrecht.png",
+    "Alinco": "https://your-cdn.com/static/brand_alinco.png",
+    "Anytone": "https://your-cdn.com/static/brand_anytone.png",
+    "Avanti": "https://your-cdn.com/static/brand_avanti.png",
+    "COBRA": "https://your-cdn.com/static/brand_cobra.png",
+    "CRT France": "https://your-cdn.com/static/brand_crt_france.png",
+    "DYNASCAN": "https://your-cdn.com/static/brand_dynascan.png",
+    "Escort": "https://your-cdn.com/static/brand_escort.png",
+    "Hoffman": "https://your-cdn.com/static/brand_hoffman.png",
+    "Jopix": "https://your-cdn.com/static/brand_jopix.png",
+    "Kenwood": "https://your-cdn.com/static/brand_kenwood.png",
+    "LEMM Italy": "https://your-cdn.com/static/brand_lemm_italy.png",
+    "Megawat UK": "https://your-cdn.com/static/brand_megawat_uk.png",
+    "Midland": "https://your-cdn.com/static/brand_midland.png",
+    "Motorola": "https://your-cdn.com/static/brand_motorola.png",
+    "PNI": "https://your-cdn.com/static/brand_pni.png",
+    "President": "https://your-cdn.com/static/brand_president.png",
+    "Radian": "https://your-cdn.com/static/brand_radian.png",
+    "RigExpert": "https://your-cdn.com/static/brand_rigexpert.png",
+    "RM Italy": "https://your-cdn.com/static/brand_rm_italy.png",
+    "Sirio Italy": "https://your-cdn.com/static/brand_sirio_italy.png",
+    "Stabo": "https://your-cdn.com/static/brand_stabo.png",
+    "Storm": "https://your-cdn.com/static/brand_storm.png",
+    "Whistler": "https://your-cdn.com/static/brand_whistler.png",
+    "Yosan": "https://your-cdn.com/static/brand_yosan.png",
+    "Zetagi": "https://your-cdn.com/static/brand_zetagi.png"
+  }
+}

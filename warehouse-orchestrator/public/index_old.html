@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CarphaCom Digital Twin v2 — AI Warehouse Fulfillment</title>
+  <style>
+    :root {
+      --bg: #0a0e1a; --bg-card: #111827; --bg-card2: #1a2332;
+      --text: #e2e8f0; --text2: #94a3b8;
+      --accent: #6366f1; --accent2: #818cf8;
+      --green: #10b981; --orange: #f59e0b; --red: #ef4444;
+      --cyan: #06b6d4; --purple: #a855f7; --border: #1e293b;
+      --glow: rgba(99, 102, 241, 0.15);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(90deg, #0f0c29, #1a1145, #0a1628);
+      padding: 8px 16px; display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); z-index: 100; position: relative; height: 48px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-logo { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--cyan)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; color: #fff; }
+    .brand-text h1 { font-size: 14px; font-weight: 800; background: linear-gradient(135deg, #818cf8, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .brand-text p { font-size: 9px; color: var(--text2); letter-spacing: 1.5px; text-transform: uppercase; }
+    .header-center { display: flex; gap: 6px; align-items: center; }
+    .view-btn { padding: 5px 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text2); font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .view-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .view-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+    .header-right { display: flex; gap: 6px; align-items: center; }
+    .live-badge { display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); font-size: 9px; color: var(--green); font-weight: 700; }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .btn { padding: 5px 12px; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--text2); color: var(--text); }
+
+    /* MAIN LAYOUT */
+    .main { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto 1fr; height: calc(100vh - 48px); }
+
+    /* METRICS BAR */
+    .metrics { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 6px 12px; background: var(--bg-card); border-bottom: 1px solid var(--border); }
+    .metric { padding: 6px 8px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); position: relative; overflow: hidden; }
+    .metric::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--cyan)); opacity: 0.4; }
+    .metric-label { font-size: 7px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1px; }
+    .metric-val { font-size: 18px; font-weight: 800; }
+
+    /* VIEWPORT */
+    .viewport { position: relative; overflow: hidden; background: var(--bg); }
+    #canvas3d, #canvas2d { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; }
+    #canvas2d { z-index: 2; } #canvas3d { z-index: 1; }
+    .viewport-overlay { position: absolute; bottom: 6px; left: 6px; z-index: 10; display: flex; gap: 3px; flex-wrap: wrap; max-width: 80%; }
+    .chip { display: flex; align-items: center; gap: 3px; font-size: 7px; color: var(--text2); background: rgba(10,14,26,0.85); padding: 2px 5px; border-radius: 4px; border: 1px solid var(--border); }
+    .chip-dot { width: 5px; height: 5px; border-radius: 3px; }
+    .viewport-info { position: absolute; top: 8px; left: 8px; z-index: 10; font-size: 9px; color: var(--text2); background: rgba(10,14,26,0.85); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
+
+    /* SIDEBAR */
+    .sidebar { border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg-card); overflow: hidden; }
+    .tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .tab { flex: 1; padding: 7px 2px; text-align: center; font-size: 8px; font-weight: 700; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+    .tab:hover { color: var(--text); }
+    .tab-content { flex: 1; overflow: hidden; position: relative; }
+    .tab-panel { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 8px; }
+    .tab-panel.active { display: block; }
+
+    /* CARDS */
+    .robot-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px; margin-bottom: 6px; transition: all 0.2s; }
+    .robot-card:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--glow); }
+    .robot-card.selected { border-color: var(--cyan); box-shadow: 0 0 20px rgba(6,182,212,0.2); }
+    .rc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+    .rc-name { font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+    .rc-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .rc-status { font-size: 7px; padding: 2px 5px; border-radius: 5px; font-weight: 700; text-transform: uppercase; }
+    .rc-msg { font-size: 9px; color: var(--cyan); margin: 3px 0; font-style: italic; min-height: 14px; }
+    .rc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; font-size: 8px; color: var(--text2); }
+    .batt-bar { height: 3px; background: #1e293b; border-radius: 2px; margin-top: 3px; overflow: hidden; }
+    .batt-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+    .rc-control { display: flex; gap: 4px; margin-top: 4px; align-items: center; }
+    .rc-ctrl-btn { padding: 3px 6px; font-size: 8px; background: var(--bg-card2); border: 1px solid var(--border); border-radius: 4px; color: var(--text2); cursor: pointer; font-weight: 600; }
+    .rc-ctrl-btn:hover { border-color: var(--accent); color: var(--text); }
+    .rc-ctrl-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .s-idle { background: #334155; color: #94a3b8; } .s-moving { background: #1e3a5f; color: #60a5fa; }
+    .s-picking { background: #3b2408; color: #fb923c; } .s-packing,.s-carrying { background: #052e16; color: #34d399; }
+    .s-charging { background: #3b0712; color: #f87171; } .s-stockcheck { background: #1e1b4b; color: #a78bfa; }
+    .s-transporting { background: #164e63; color: #67e8f9; } .s-shipping { background: #0c4a6e; color: #7dd3fc; }
+    .s-completed { background: #0f5132; color: #10b981; } .s-assigned { background: #1e3a5f; color: #60a5fa; }
+    .s-queued { background: #374151; color: #9ca3af; } .s-failed { background: #7f1d1d; color: #fca5a5; }
+    .s-error { background: #7f1d1d; color: #fca5a5; }
+
+    /* JOYSTICK */
+    .joystick-container { position: absolute; bottom: 16px; right: 16px; z-index: 20; display: none; }
+    .joystick-container.active { display: block; }
+    .joystick { width: 120px; height: 120px; position: relative; }
+    .joy-label { text-align: center; font-size: 8px; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .joy-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 32px; height: 32px; border-radius: 50%; background: var(--bg-card2); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text2); }
+    .joy-btn { position: absolute; width: 34px; height: 34px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text2); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.1s; user-select: none; }
+    .joy-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .joy-btn:active { transform: scale(0.9); }
+    .joy-up { top: 0; left: 50%; transform: translateX(-50%); }
+    .joy-down { bottom: 0; left: 50%; transform: translateX(-50%); }
+    .joy-left { top: 50%; left: 0; transform: translateY(-50%); }
+    .joy-right { top: 50%; right: 0; transform: translateY(-50%); }
+    .joy-selected { font-size: 9px; text-align: center; margin-top: 4px; color: var(--cyan); font-weight: 700; }
+
+    /* ORDER CARDS */
+    .order-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px; margin-bottom: 6px; }
+    .oc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+    .oc-id { font-size: 10px; font-weight: 700; color: var(--cyan); }
+    .oc-items { font-size: 8px; color: var(--text2); line-height: 1.5; margin-top: 2px; }
+    .oc-progress { height: 2px; background: #1e293b; border-radius: 2px; margin-top: 3px; overflow: hidden; }
+    .oc-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.5s; }
+
+    /* ACTION LOG */
+    .log-entry { display: flex; gap: 6px; align-items: flex-start; padding: 4px 6px; margin-bottom: 2px; border-radius: 6px; background: rgba(17,24,39,0.5); border: 1px solid transparent; font-size: 9px; transition: all 0.2s; }
+    .log-entry:hover { border-color: var(--border); }
+    .log-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+    .log-body { flex: 1; min-width: 0; }
+    .log-msg { color: var(--text); line-height: 1.3; word-wrap: break-word; }
+    .log-detail { color: var(--text2); font-size: 8px; margin-top: 1px; }
+    .log-time { color: var(--text2); font-size: 7px; flex-shrink: 0; margin-top: 1px; }
+    .log-entry.type-order { border-left: 2px solid var(--cyan); }
+    .log-entry.type-pick { border-left: 2px solid var(--orange); }
+    .log-entry.type-complete { border-left: 2px solid var(--green); }
+    .log-entry.type-communicate { border-left: 2px solid var(--purple); }
+    .log-entry.type-command { border-left: 2px solid var(--cyan); }
+    .log-entry.type-think { border-left: 2px solid var(--accent); }
+
+    /* AI COPILOT */
+    .copilot-wrap { display: flex; flex-direction: column; height: 100%; }
+    .copilot-msgs { flex: 1; overflow-y: auto; padding-bottom: 4px; }
+    .co-msg { margin-bottom: 5px; padding: 6px 8px; border-radius: 8px; font-size: 10px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+    .co-msg.user { background: var(--accent); color: #fff; margin-left: 30px; border-bottom-right-radius: 2px; }
+    .co-msg.ai { background: var(--bg); border: 1px solid var(--border); margin-right: 15px; border-bottom-left-radius: 2px; }
+    .co-msg.system { background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.2); color: var(--cyan); font-size: 9px; text-align: center; }
+    .copilot-input-row { display: flex; gap: 4px; margin-top: 4px; flex-shrink: 0; }
+    .copilot-input { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 10px; outline: none; }
+    .copilot-input:focus { border-color: var(--accent); }
+    .co-send { padding: 6px 10px; background: var(--accent); border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 12px; }
+    .co-mic { padding: 8px 14px; background: rgba(6,182,212,0.1); border: 2px solid var(--cyan); border-radius: 10px; color: var(--cyan); cursor: pointer; font-size: 18px; transition: all 0.2s; position: relative; }
+    .co-mic:hover { background: rgba(6,182,212,0.2); border-color: var(--accent); color: var(--text); transform: scale(1.1); }
+    .co-mic.recording { background: rgba(239,68,68,0.25); border-color: var(--red); color: var(--red); animation: micPulse 1s infinite; transform: scale(1.15); }
+    .co-mic.recording::after { content: ''; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--red); animation: blink 0.8s infinite; }
+    .voice-status { font-size: 10px; color: var(--cyan); text-align: center; padding: 3px 6px; background: rgba(6,182,212,0.08); border-radius: 6px; margin-bottom: 3px; animation: fadeIn 0.3s; }
+    @keyframes micPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); } 50% { box-shadow: 0 0 12px 4px rgba(239,68,68,0.15); } }
+    .voice-status { font-size: 8px; color: var(--red); text-align: center; padding: 2px 0; font-weight: 600; animation: blink 1s infinite; }
+    .mic-select-row { display: flex; gap: 4px; align-items: center; margin-bottom: 3px; }
+    .mic-select-row select { flex: 1; padding: 3px 4px; font-size: 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; outline: none; }
+    .mic-select-row button { padding: 3px 8px; font-size: 8px; background: var(--accent); color: #fff; border: none; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+    .mic-level-bar { height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; margin-bottom: 2px; }
+    .mic-level-fill { height: 100%; width: 0%; background: var(--green); transition: width 0.1s; border-radius: 2px; }
+    .co-mic:disabled { opacity: 0.3; cursor: not-allowed; }
+    .co-mode-row { display: flex; gap: 3px; margin-bottom: 4px; flex-shrink: 0; }
+    .co-mode { padding: 3px 8px; font-size: 8px; font-weight: 700; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; text-transform: uppercase; }
+    .co-mode.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* TWIN INFO */
+    .twin-info { padding: 8px; background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(6,182,212,0.04)); border: 1px solid rgba(99,102,241,0.15); border-radius: 8px; margin-bottom: 6px; }
+    .twin-info h3 { font-size: 10px; font-weight: 700; color: var(--accent2); margin-bottom: 3px; }
+    .twin-info p { font-size: 8px; color: var(--text2); line-height: 1.5; }
+    .twin-stat { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 9px; border-bottom: 1px solid var(--border); }
+    .twin-stat:last-child { border: none; }
+
+    /* TOASTS */
+    .toast-container { position: fixed; top: 56px; right: 12px; z-index: 1000; max-width: 320px; }
+    .toast { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; margin-bottom: 4px; font-size: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); animation: toastIn 0.3s ease, toastOut 0.4s ease 4s forwards; }
+    @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } }
+    @keyframes toastOut { to { opacity: 0; transform: translateY(-10px); } }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* MOBILE */
+    @media (max-width: 900px) {
+      .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+      .sidebar { display: none; }
+      .metrics { grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 4px 8px; }
+      .metric-val { font-size: 14px; } .metric-label { font-size: 7px; }
+      .joystick-container { bottom: 56px; right: 8px; }
+      .mobile-bottom-nav { display: flex !important; justify-content: space-around; align-items: center; background: var(--bg-card); border-top: 1px solid var(--border); padding: 4px 2px; }
+      .mobile-nav-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 6px; border: none; border-radius: 6px; background: transparent; color: var(--text2); font-size: 7px; font-weight: 600; cursor: pointer; text-transform: uppercase; }
+      .mobile-nav-btn.active { color: var(--accent2); background: rgba(99,102,241,0.1); }
+      .mobile-nav-btn svg { width: 16px; height: 16px; }
+      .mobile-panel { display: none; position: fixed; bottom: 40px; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border); max-height: 45vh; overflow-y: auto; z-index: 50; padding: 8px; }
+      .mobile-panel.active { display: block; }
+    }
+    @media (max-width: 480px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .header-center { display: none; } .brand-text p { display: none; }
+    }
+    @media (min-width: 901px) { .mobile-bottom-nav { display: none !important; } .mobile-panel { display: none !important; } }
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="brand">
+    <div class="brand-logo">DT</div>
+    <div class="brand-text"><h1>CarphaCom Digital Twin v2</h1><p>Real Products &bull; AI Robotics &bull; Live Warehouse</p></div>
+  </div>
+  <div class="header-center">
+    <button class="view-btn active" data-view="3d">3D View</button>
+    <button class="view-btn" data-view="2d">2D Map</button>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><span class="live-dot"></span><span>LIVE</span></div>
+    <span style="font-size:9px;color:var(--text2)">T:<span id="tickNum">0</span></span>
+    <button class="btn btn-primary" id="addOrderBtn">+ Order</button>
+    <button class="btn btn-ghost" id="reportBtn">AI Report</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Total Orders</div><div class="metric-val" id="mTotal">0</div></div>
+    <div class="metric"><div class="metric-label">Completed</div><div class="metric-val" style="color:var(--green)" id="mDone">0</div></div>
+    <div class="metric"><div class="metric-label">Active</div><div class="metric-val" style="color:var(--orange)" id="mActive">0</div></div>
+    <div class="metric"><div class="metric-label">Avg Time</div><div class="metric-val" id="mTime">0s</div></div>
+    <div class="metric"><div class="metric-label">Robot Use</div><div class="metric-val" style="color:var(--purple)" id="mUtil">0%</div></div>
+    <div class="metric"><div class="metric-label">Items/Hr</div><div class="metric-val" style="color:var(--cyan)" id="mIPH">0</div></div>
+    <div class="metric"><div class="metric-label">Products</div><div class="metric-val" style="color:var(--accent2)" id="mProds">0</div></div>
+    <div class="metric"><div class="metric-label">SKUs</div><div class="metric-val" style="color:var(--green)" id="mSKUs">0</div></div>
+  </div>
+
+  <div class="viewport">
+    <canvas id="canvas3d"></canvas>
+    <canvas id="canvas2d"></canvas>
+    <div class="viewport-info" id="viewInfo">Digital Twin &middot; 30m x 20m &middot; 12 Zones &middot; 4 AGV</div>
+    <div class="viewport-overlay" id="legend"></div>
+    <div class="joystick-container" id="joystickWrap">
+      <div class="joy-label">Manual Control</div>
+      <div class="joystick">
+        <div class="joy-btn joy-up" data-dir="up">&#9650;</div>
+        <div class="joy-btn joy-down" data-dir="down">&#9660;</div>
+        <div class="joy-btn joy-left" data-dir="left">&#9664;</div>
+        <div class="joy-btn joy-right" data-dir="right">&#9654;</div>
+        <div class="joy-center">&#127918;</div>
+      </div>
+      <div class="joy-selected" id="joyLabel">No robot selected</div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="tabs">
+      <div class="tab active" data-tab="twin">Twin</div>
+      <div class="tab" data-tab="stock">Stock</div>
+      <div class="tab" data-tab="robots">Robots</div>
+      <div class="tab" data-tab="orders">Orders</div>
+      <div class="tab" data-tab="log">Log</div>
+      <div class="tab" data-tab="copilot">AI</div>
+    </div>
+    <div class="tab-content">
+      <div class="tab-panel active" id="tab-twin">
+        <div class="twin-info"><h3>CarphaCom Digital Twin v2</h3><p>Virtual replica of the CarphaCom warehouse with real products from the database, real stock levels, organized into 12 product categories. Orders from <strong>your-domain.com</strong> trigger AGV robots that pick, pack, and ship automatically.</p></div>
+        <div class="twin-info"><h3>System Status</h3><div id="twinStats"><div class="twin-stat"><span>Store</span><span style="color:var(--green)">ONLINE</span></div><div class="twin-stat"><span>Medusa API</span><span style="color:var(--green)">ONLINE</span></div><div class="twin-stat"><span>Warehouse Twin</span><span style="color:var(--green)">SYNCED</span></div><div class="twin-stat"><span>Gemini AI</span><span id="aiStatus" style="color:var(--text2)">STANDBY</span></div><div class="twin-stat"><span>Product Zones</span><span>12 zones</span></div><div class="twin-stat"><span>AGV Robots</span><span>4 units</span></div></div></div>
+        <div class="twin-info"><h3>Order Flow</h3><p>Customer order &#8594; MedusaJS event &#8594; Twin receives &#8594; Stock check &#8594; AGV picks &#8594; Pack &#8594; Ship &#8594; Fulfillment created</p></div>
+      </div>
+      <div class="tab-panel" id="tab-stock"><div id="stockContent"><p style="text-align:center;color:var(--text2);padding:20px;font-size:10px">Loading stock data...</p></div></div>
+      <div class="tab-panel" id="tab-robots"></div>
+      <div class="tab-panel" id="tab-orders"></div>
+      <div class="tab-panel" id="tab-log"><div id="logContent"><p style="text-align:center;color:var(--text2);padding:20px;font-size:10px">Waiting for activity...</p></div></div>
+      <div class="tab-panel" id="tab-copilot">
+        <div class="copilot-wrap">
+          <div class="co-mode-row"><button class="co-mode active" data-mode="chat">Chat</button><button class="co-mode" data-mode="command">Command</button></div>
+          <div class="copilot-msgs" id="cMsgs"><div class="co-msg ai">Hi! I'm the CarphaCom AI Copilot. In <strong>Chat</strong> mode I answer questions about the warehouse. In <strong>Command</strong> mode I control robots - try "Send Vegbot to Radio Stations" or "Send Octobot to check shelf A and come back". Robots: 🤖 <strong>Octobot</strong>, <strong>Marcobot</strong>, <strong>Cyberbot</strong>, <strong>Vegbot</strong></div></div>
+          <div class="mic-select-row" id="micSelectRow" style="display:none"><select id="micDeviceSelect"><option value="">Loading mics...</option></select><button id="micTestBtn">🔊 Test</button></div>
+          <div class="mic-level-bar" id="micLevelBar" style="display:none"><div class="mic-level-fill" id="micLevelFill"></div></div>
+          <div id="voiceStatus"></div>
+          <div class="copilot-input-row"><input type="text" class="copilot-input" id="cInput" placeholder="Ask AI or give a command..."><button class="co-mic" id="cMic" title="Voice command (click to speak)">&#127908;</button><button class="co-send" id="cSend">&#10148;</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<div class="mobile-bottom-nav" id="mobileNav" style="display:none">
+  <button class="mobile-nav-btn" data-panel="m-robots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="4" width="14" height="12" rx="2"/><circle cx="9" cy="10" r="1.5"/><circle cx="15" cy="10" r="1.5"/></svg>Robots</button>
+  <button class="mobile-nav-btn" data-panel="m-orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>Orders</button>
+  <button class="mobile-nav-btn" data-panel="m-log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Log</button>
+  <button class="mobile-nav-btn" data-panel="m-ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>AI</button>
+</div>
+<div class="mobile-panel" id="m-robots"></div>
+<div class="mobile-panel" id="m-orders"></div>
+<div class="mobile-panel" id="m-log"></div>
+<div class="mobile-panel" id="m-ai">
+  <div class="copilot-wrap" style="height:35vh">
+    <div class="copilot-msgs" id="cMsgsMobile"></div>
+    <div id="voiceStatusMobile"></div>
+    <div class="copilot-input-row"><input type="text" class="copilot-input" id="cInputMobile" placeholder="Ask AI or command robots..."><button class="co-mic" id="cMicMobile" title="Voice command">&#127908;</button><button class="co-send" id="cSendMobile">&#10148;</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function(){
+var currentView = '3d';
+var latestState = null;
+var socket = io();
+var selectedRobotId = null;
+var copilotMode = 'chat';
+var c3d = document.getElementById('canvas3d');
+var c2d = document.getElementById('canvas2d');
+var ctx2d = c2d.getContext('2d');
+var scene, camera, renderer;
+var robotMeshes = {};
+var pathLines = {};
+var packageMeshes = {};
+var speechSprites = {};
+var SCALE = 0.5;
+var W = 60, H = 40;
+var isDragging = false, prevMX = 0, prevMY = 0;
+var camAngleH = -0.6, camAngleV = 0.7, camDist = 28;
+
+function updateCam() {
+  var cx = (W * SCALE) / 2, cz = (H * SCALE) / 2;
+  camera.position.x = cx + Math.sin(camAngleH) * camDist * Math.cos(camAngleV);
+  camera.position.y = Math.sin(camAngleV) * camDist;
+  camera.position.z = cz + Math.cos(camAngleH) * camDist * Math.cos(camAngleV);
+  camera.lookAt(cx, 0, cz);
+}
+
+function init3D() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x080c18);
+  scene.fog = new THREE.FogExp2(0x080c18, 0.012);
+  camera = new THREE.PerspectiveCamera(55, c3d.clientWidth / c3d.clientHeight, 0.1, 300);
+  updateCam();
+  renderer = new THREE.WebGLRenderer({ canvas: c3d, antialias: true });
+  renderer.setSize(c3d.clientWidth, c3d.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+
+  scene.add(new THREE.AmbientLight(0x404060, 0.6));
+  var dir = new THREE.DirectionalLight(0xffffff, 1.0);
+  dir.position.set(20, 25, 15); dir.castShadow = true;
+  dir.shadow.mapSize.set(2048, 2048);
+  dir.shadow.camera.near = 1; dir.shadow.camera.far = 60;
+  dir.shadow.camera.left = -30; dir.shadow.camera.right = 30;
+  dir.shadow.camera.top = 30; dir.shadow.camera.bottom = -30;
+  scene.add(dir);
+  scene.add(new THREE.PointLight(0x6366f1, 0.6, 30).translateX(8).translateY(6).translateZ(5));
+  var pl2 = new THREE.PointLight(0x06b6d4, 0.5, 30); pl2.position.set(22, 6, 12); scene.add(pl2);
+  var pl3 = new THREE.PointLight(0xf59e0b, 0.4, 25); pl3.position.set(15, 5, 18); scene.add(pl3);
+
+  var floorGeo = new THREE.PlaneGeometry(W * SCALE + 2, H * SCALE + 2);
+  var floorMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9, metalness: 0.1 });
+  var floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2; floor.position.set(W * SCALE / 2, -0.01, H * SCALE / 2);
+  floor.receiveShadow = true; scene.add(floor);
+
+  var grid = new THREE.GridHelper(Math.max(W, H) * SCALE, Math.max(W, H), 0x1e293b, 0x1e293b);
+  grid.position.set(W * SCALE / 2, 0.005, H * SCALE / 2);
+  grid.material.opacity = 0.2; grid.material.transparent = true; scene.add(grid);
+
+  c3d.addEventListener('mousedown', function(e) { isDragging = true; prevMX = e.clientX; prevMY = e.clientY; });
+  window.addEventListener('mouseup', function() { isDragging = false; });
+  window.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    camAngleH += (e.clientX - prevMX) * 0.005;
+    camAngleV = Math.max(0.15, Math.min(1.4, camAngleV + (e.clientY - prevMY) * 0.005));
+    prevMX = e.clientX; prevMY = e.clientY; updateCam();
+  });
+  c3d.addEventListener('wheel', function(e) { camDist = Math.max(6, Math.min(50, camDist + e.deltaY * 0.02)); updateCam(); e.preventDefault(); }, { passive: false });
+
+  var touchDist = 0;
+  c3d.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) { isDragging = true; prevMX = e.touches[0].clientX; prevMY = e.touches[0].clientY; }
+    if (e.touches.length === 2) { touchDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); }
+  });
+  c3d.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (e.touches.length === 1 && isDragging) {
+      camAngleH += (e.touches[0].clientX - prevMX) * 0.005;
+      camAngleV = Math.max(0.15, Math.min(1.4, camAngleV + (e.touches[0].clientY - prevMY) * 0.005));
+      prevMX = e.touches[0].clientX; prevMY = e.touches[0].clientY; updateCam();
+    }
+    if (e.touches.length === 2) {
+      var nd = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      camDist = Math.max(6, Math.min(50, camDist + (touchDist - nd) * 0.05)); touchDist = nd; updateCam();
+    }
+  }, { passive: false });
+  c3d.addEventListener('touchend', function() { isDragging = false; });
+}
+
+var zonesBuilt = false;
+function buildZones3D() {
+  if (!latestState || !latestState.zones || zonesBuilt) return;
+  zonesBuilt = true;
+  latestState.zones.forEach(function(z) {
+    var b = z.bounds;
+    var colorHex = parseInt((z.color || '#555').replace('#', ''), 16);
+    var zGeo = new THREE.PlaneGeometry(b.w * SCALE, b.h * SCALE);
+    var zMat = new THREE.MeshStandardMaterial({ color: colorHex, transparent: true, opacity: 0.1, roughness: 0.8 });
+    var zm = new THREE.Mesh(zGeo, zMat);
+    zm.rotation.x = -Math.PI / 2; zm.position.set((b.x + b.w / 2) * SCALE, 0.015, (b.y + b.h / 2) * SCALE); scene.add(zm);
+
+    var bGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(b.w * SCALE, 0.05, b.h * SCALE));
+    var bMat = new THREE.LineBasicMaterial({ color: colorHex, transparent: true, opacity: 0.4 });
+    var border = new THREE.LineSegments(bGeo, bMat);
+    border.position.set((b.x + b.w / 2) * SCALE, 0.025, (b.y + b.h / 2) * SCALE); scene.add(border);
+
+    if (z.type === 'SHELF') {
+      for (var row = 0; row < Math.min(b.h - 1, 3); row++) {
+        var shGeo = new THREE.BoxGeometry(b.w * SCALE * 0.85, 1.2, 0.2);
+        var shMat = new THREE.MeshStandardMaterial({ color: colorHex, transparent: true, opacity: 0.25, roughness: 0.4, metalness: 0.4 });
+        var shelf = new THREE.Mesh(shGeo, shMat);
+        shelf.position.set((b.x + b.w / 2) * SCALE, 0.6, (b.y + 1 + row * 1.3) * SCALE);
+        shelf.castShadow = true; shelf.receiveShadow = true; scene.add(shelf);
+        for (var bx = 0; bx < Math.min(b.w - 2, 6); bx++) {
+          var boxGeo = new THREE.BoxGeometry(0.12 + Math.random() * 0.08, 0.12, 0.1);
+          var boxMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.6, metalness: 0.2, transparent: true, opacity: 0.5 });
+          var box = new THREE.Mesh(boxGeo, boxMat);
+          box.position.set((b.x + 1 + bx * (b.w / 6)) * SCALE, 1.25, (b.y + 1 + row * 1.3) * SCALE);
+          box.castShadow = true; scene.add(box);
+        }
+      }
+    }
+
+    var canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 48;
+    var c = canvas.getContext('2d');
+    c.font = 'bold 20px Inter, sans-serif'; c.textAlign = 'center';
+    c.fillStyle = '#' + colorHex.toString(16).padStart(6, '0');
+    var lbl = z.name.split('\u2014');
+    c.fillText(lbl.length > 1 ? lbl[1].trim() : z.name, 128, 32);
+    var tex = new THREE.CanvasTexture(canvas);
+    var sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.7 }));
+    sprite.scale.set(1.8, 0.4, 1); sprite.position.set((b.x + b.w / 2) * SCALE, 2.0, (b.y + b.h / 2) * SCALE); scene.add(sprite);
+  });
+
+  var wMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, transparent: true, opacity: 0.4, roughness: 0.5 });
+  [[W*SCALE/2, 0, W*SCALE, 0.1], [W*SCALE/2, H*SCALE, W*SCALE, 0.1], [0, H*SCALE/2, 0.1, H*SCALE], [W*SCALE, H*SCALE/2, 0.1, H*SCALE]].forEach(function(p) {
+    var wG = new THREE.BoxGeometry(p[2], 2.5, p[3]);
+    var wall = new THREE.Mesh(wG, wMat); wall.position.set(p[0], 1.25, p[1]); wall.castShadow = true; scene.add(wall);
+  });
+  for (var i = 0; i < 6; i++) {
+    var beamGeo = new THREE.BoxGeometry(W * SCALE * 0.9, 0.04, 0.06);
+    var beam = new THREE.Mesh(beamGeo, new THREE.MeshStandardMaterial({ color: 0x374151, metalness: 0.7, roughness: 0.3 }));
+    beam.position.set(W * SCALE / 2, 2.4, (3 + i * 6) * SCALE); scene.add(beam);
+  }
+}
+
+function createRobotMesh(robot) {
+  var colorHex = parseInt(robot.color.replace('#', ''), 16);
+  var group = new THREE.Group();
+  var baseGeo = new THREE.BoxGeometry(0.42, 0.06, 0.50);
+  var baseMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.8 });
+  var base = new THREE.Mesh(baseGeo, baseMat); base.position.y = 0.03; base.castShadow = true; group.add(base);
+
+  var stripGeo = new THREE.BoxGeometry(0.44, 0.015, 0.52);
+  var stripMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.4 });
+  var strip = new THREE.Mesh(stripGeo, stripMat); strip.position.y = 0.065; strip.name = 'strip'; group.add(strip);
+
+  var wheelGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.06, 12);
+  var wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.9 });
+  [[-0.17,0.045,-0.2],[0.17,0.045,-0.2],[-0.17,0.045,0.2],[0.17,0.045,0.2]].forEach(function(p) {
+    var wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.rotation.z = Math.PI / 2; wheel.position.set(p[0], p[1], p[2]); group.add(wheel);
+  });
+
+  var bodyGeo = new THREE.BoxGeometry(0.34, 0.18, 0.44);
+  var bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25, metalness: 0.7 });
+  var body = new THREE.Mesh(bodyGeo, bodyMat); body.position.y = 0.16; body.castShadow = true; group.add(body);
+
+  var panelGeo = new THREE.BoxGeometry(0.28, 0.08, 0.46);
+  var panelMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.6, transparent: true, opacity: 0.7 });
+  var panel = new THREE.Mesh(panelGeo, panelMat); panel.position.y = 0.16; group.add(panel);
+
+  var turretBaseGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.04, 12);
+  var turretBase = new THREE.Mesh(turretBaseGeo, new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.8 }));
+  turretBase.position.y = 0.27; group.add(turretBase);
+
+  var domeGeo = new THREE.SphereGeometry(0.055, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+  var dome = new THREE.Mesh(domeGeo, new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.05, metalness: 0.95, transparent: true, opacity: 0.8 }));
+  dome.position.y = 0.29; group.add(dome);
+
+  var ringGeo = new THREE.TorusGeometry(0.04, 0.008, 8, 24);
+  var ringMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.8 });
+  var ring = new THREE.Mesh(ringGeo, ringMat); ring.position.y = 0.3; ring.rotation.x = Math.PI / 2; ring.name = 'led'; group.add(ring);
+
+  var eyeGeo = new THREE.SphereGeometry(0.015, 8, 8);
+  var eyeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+  var eyeL = new THREE.Mesh(eyeGeo, eyeMat); eyeL.position.set(-0.06, 0.2, 0.23);
+  var eyeR = new THREE.Mesh(eyeGeo, eyeMat.clone()); eyeR.position.set(0.06, 0.2, 0.23);
+  group.add(eyeL); group.add(eyeR);
+
+  var glowGeo = new THREE.RingGeometry(0.25, 0.38, 32);
+  var glowMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.06, side: THREE.DoubleSide });
+  var glow = new THREE.Mesh(glowGeo, glowMat); glow.rotation.x = -Math.PI / 2; glow.position.y = 0.005; glow.name = 'glow'; group.add(glow);
+
+  var lc = document.createElement('canvas'); lc.width = 192; lc.height = 48;
+  var lctx = lc.getContext('2d');
+  lctx.fillStyle = 'rgba(0,0,0,0.5)'; lctx.beginPath(); lctx.roundRect(16, 4, 160, 40, 8); lctx.fill();
+  lctx.font = 'bold 20px monospace'; lctx.textAlign = 'center';
+  lctx.fillStyle = '#' + colorHex.toString(16).padStart(6, '0');
+  lctx.fillText(robot.name, 96, 32);
+  var lsp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(lc), transparent: true }));
+  lsp.scale.set(0.7, 0.2, 1); lsp.position.y = 0.5; group.add(lsp);
+
+  scene.add(group);
+  return group;
+}
+
+function updateSpeechBubble(robotId, message, robotGroup) {
+  if (speechSprites[robotId]) {
+    robotGroup.remove(speechSprites[robotId]);
+    speechSprites[robotId].material.map.dispose();
+    speechSprites[robotId].material.dispose();
+    delete speechSprites[robotId];
+  }
+  if (!message || message === 'Standing by...') return;
+
+  var cvs = document.createElement('canvas'); cvs.width = 400; cvs.height = 80;
+  var c = cvs.getContext('2d');
+  c.fillStyle = 'rgba(17, 24, 39, 0.92)';
+  c.strokeStyle = 'rgba(99, 102, 241, 0.6)';
+  c.lineWidth = 2;
+  c.beginPath(); c.roundRect(10, 5, 380, 55, 12); c.fill(); c.stroke();
+  c.fillStyle = 'rgba(17, 24, 39, 0.92)';
+  c.beginPath(); c.moveTo(180, 60); c.lineTo(200, 75); c.lineTo(220, 60); c.fill();
+  c.font = '600 20px Inter, system-ui, sans-serif';
+  c.fillStyle = '#e2e8f0';
+  c.textAlign = 'center';
+  var txt = message.length > 35 ? message.substring(0, 35) + '...' : message;
+  c.fillText(txt, 200, 40);
+
+  var tex = new THREE.CanvasTexture(cvs);
+  var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  sp.scale.set(1.6, 0.35, 1);
+  sp.position.y = 0.85;
+  sp.renderOrder = 999;
+  robotGroup.add(sp);
+  speechSprites[robotId] = sp;
+}
+
+function updateRobot3D(robot) {
+  if (!robotMeshes[robot.id]) robotMeshes[robot.id] = createRobotMesh(robot);
+  var mesh = robotMeshes[robot.id];
+  var tx = robot.position.x * SCALE, tz = robot.position.y * SCALE;
+  mesh.position.x += (tx - mesh.position.x) * 0.15;
+  mesh.position.z += (tz - mesh.position.z) * 0.15;
+  mesh.position.y = Math.sin(Date.now() * 0.004 + robot.id.charCodeAt(0)) * 0.012;
+
+  if (robot.path && robot.path.length > robot.pathIndex) {
+    var np = robot.path[robot.pathIndex];
+    var angle = Math.atan2(np.x * SCALE - mesh.position.x, np.y * SCALE - mesh.position.z);
+    mesh.rotation.y += (angle - mesh.rotation.y) * 0.1;
+  }
+
+  var led = mesh.getObjectByName('led');
+  if (led) led.material.opacity = robot.status !== 'IDLE' ? 0.5 + Math.sin(Date.now() * 0.01) * 0.5 : 0.3;
+  var strip = mesh.getObjectByName('strip');
+  if (strip) strip.material.opacity = robot.status !== 'IDLE' ? 0.3 + Math.sin(Date.now() * 0.008) * 0.3 : 0.15;
+  var glow = mesh.getObjectByName('glow');
+  if (glow) { glow.material.opacity = robot.status !== 'IDLE' ? 0.12 + Math.sin(Date.now() * 0.005) * 0.06 : 0.04; glow.rotation.z += 0.015; }
+
+  if (selectedRobotId === robot.id && glow) { glow.material.opacity = 0.3; glow.material.color.set(0x06b6d4); }
+
+  if (robot.itemsCarried && robot.itemsCarried.length > 0) {
+    if (!packageMeshes[robot.id]) {
+      var pkg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.12), new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.5 }));
+      pkg.castShadow = true; mesh.add(pkg); pkg.position.set(0, 0.3, 0); packageMeshes[robot.id] = pkg;
+    }
+  } else if (packageMeshes[robot.id]) { mesh.remove(packageMeshes[robot.id]); delete packageMeshes[robot.id]; }
+
+  if (pathLines[robot.id]) { scene.remove(pathLines[robot.id]); delete pathLines[robot.id]; }
+  if (robot.path && robot.path.length > robot.pathIndex) {
+    var pts = [new THREE.Vector3(mesh.position.x, 0.04, mesh.position.z)];
+    for (var i = robot.pathIndex; i < Math.min(robot.path.length, robot.pathIndex + 20); i++) {
+      pts.push(new THREE.Vector3(robot.path[i].x * SCALE, 0.04, robot.path[i].y * SCALE));
+    }
+    if (pts.length > 1) {
+      var lineMat = new THREE.LineBasicMaterial({ color: parseInt(robot.color.replace('#',''), 16), transparent: true, opacity: 0.3 });
+      var line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat);
+      scene.add(line); pathLines[robot.id] = line;
+    }
+  }
+
+  var msg = latestState && latestState.robotMessages ? latestState.robotMessages[robot.id] : '';
+  updateSpeechBubble(robot.id, msg, mesh);
+}
+
+function animate3D() { requestAnimationFrame(animate3D); if (currentView === '3d') renderer.render(scene, camera); }
+
+function resize2D() {
+  var vp = c2d.parentElement;
+  c2d.width = vp.clientWidth * devicePixelRatio;
+  c2d.height = vp.clientHeight * devicePixelRatio;
+  ctx2d.scale(devicePixelRatio, devicePixelRatio);
+}
+
+function draw2D(state) {
+  if (!state || currentView !== '2d') return;
+  var w = c2d.width / devicePixelRatio, h = c2d.height / devicePixelRatio;
+  var cw = w / state.width, ch = h / state.height;
+  ctx2d.clearRect(0, 0, w, h);
+  ctx2d.fillStyle = '#0a0e1a'; ctx2d.fillRect(0, 0, w, h);
+
+  ctx2d.strokeStyle = 'rgba(30,41,59,0.2)'; ctx2d.lineWidth = 0.4;
+  for (var x = 0; x <= state.width; x++) { ctx2d.beginPath(); ctx2d.moveTo(x*cw, 0); ctx2d.lineTo(x*cw, state.height*ch); ctx2d.stroke(); }
+  for (var y = 0; y <= state.height; y++) { ctx2d.beginPath(); ctx2d.moveTo(0, y*ch); ctx2d.lineTo(state.width*cw, y*ch); ctx2d.stroke(); }
+
+  if (state.grid) for (var gy = 0; gy < state.height; gy++) for (var gx = 0; gx < state.width; gx++) {
+    if (state.grid[gy] && state.grid[gy][gx] === 1) { ctx2d.fillStyle = 'rgba(51,65,85,0.3)'; ctx2d.fillRect(gx*cw, gy*ch, cw, ch); }
+  }
+
+  if (state.zones) state.zones.forEach(function(z) {
+    var b = z.bounds;
+    ctx2d.fillStyle = z.color + '18'; ctx2d.fillRect(b.x*cw, b.y*ch, b.w*cw, b.h*ch);
+    ctx2d.strokeStyle = z.color + '45'; ctx2d.lineWidth = 1.2; ctx2d.strokeRect(b.x*cw, b.y*ch, b.w*cw, b.h*ch);
+    ctx2d.fillStyle = z.color; ctx2d.font = 'bold ' + Math.max(7, cw*0.5) + 'px system-ui'; ctx2d.textAlign = 'center';
+    var txt = z.name.split('\u2014');
+    ctx2d.fillText(txt.length > 1 ? txt[0].trim() : z.name, (b.x+b.w/2)*cw, (b.y+b.h/2)*ch - 2);
+    ctx2d.font = Math.max(6, cw*0.4) + 'px system-ui'; ctx2d.fillStyle = z.color + 'aa';
+    if (txt.length > 1) ctx2d.fillText(txt[1].trim(), (b.x+b.w/2)*cw, (b.y+b.h/2)*ch + 8);
+    ctx2d.textAlign = 'start';
+  });
+
+  if (state.robots) state.robots.forEach(function(r) {
+    var rx = r.position.x*cw+cw/2, ry = r.position.y*ch+ch/2, rad = Math.min(cw,ch)*0.4;
+    if (r.path && r.path.length > r.pathIndex) {
+      ctx2d.strokeStyle = r.color + '28'; ctx2d.lineWidth = 1.2; ctx2d.setLineDash([3,3]);
+      ctx2d.beginPath(); ctx2d.moveTo(rx, ry);
+      for (var i = r.pathIndex; i < r.path.length; i++) ctx2d.lineTo(r.path[i].x*cw+cw/2, r.path[i].y*ch+ch/2);
+      ctx2d.stroke(); ctx2d.setLineDash([]);
+    }
+    if (selectedRobotId === r.id) {
+      ctx2d.beginPath(); ctx2d.arc(rx, ry, rad + 3, 0, Math.PI*2);
+      ctx2d.strokeStyle = '#06b6d4'; ctx2d.lineWidth = 2; ctx2d.stroke();
+    }
+    ctx2d.beginPath(); ctx2d.arc(rx, ry, rad, 0, Math.PI*2);
+    ctx2d.fillStyle = r.color; ctx2d.fill();
+    ctx2d.strokeStyle = '#fff'; ctx2d.lineWidth = 0.8; ctx2d.stroke();
+    ctx2d.fillStyle = '#fff'; ctx2d.font = 'bold ' + Math.max(6, rad*0.6) + 'px monospace';
+    ctx2d.textAlign = 'center'; ctx2d.textBaseline = 'middle';
+    ctx2d.fillText(r.name.replace('AGV-',''), rx, ry);
+
+    var msg = state.robotMessages ? state.robotMessages[r.id] : '';
+    if (msg && msg !== 'Standing by...') {
+      var btxt = msg.length > 30 ? msg.substring(0, 30) + '...' : msg;
+      ctx2d.font = '600 ' + Math.max(7, cw * 0.4) + 'px system-ui';
+      var tw = ctx2d.measureText(btxt).width;
+      var bx = rx - tw/2 - 6, by = ry - rad - 22;
+      ctx2d.fillStyle = 'rgba(17,24,39,0.9)'; ctx2d.strokeStyle = 'rgba(99,102,241,0.5)'; ctx2d.lineWidth = 1;
+      ctx2d.beginPath(); ctx2d.roundRect(bx, by, tw + 12, 16, 4); ctx2d.fill(); ctx2d.stroke();
+      ctx2d.fillStyle = 'rgba(17,24,39,0.9)';
+      ctx2d.beginPath(); ctx2d.moveTo(rx - 4, by + 16); ctx2d.lineTo(rx, by + 22); ctx2d.lineTo(rx + 4, by + 16); ctx2d.fill();
+      ctx2d.fillStyle = '#e2e8f0'; ctx2d.fillText(btxt, rx, by + 11);
+    }
+    ctx2d.textAlign = 'start'; ctx2d.textBaseline = 'alphabetic';
+  });
+}
+
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function updateUI(state) {
+  latestState = state;
+  if (!zonesBuilt) buildZones3D();
+
+  document.getElementById('tickNum').textContent = state.tick || 0;
+  var m = state.metrics || {};
+  document.getElementById('mTotal').textContent = m.totalOrders || 0;
+  document.getElementById('mDone').textContent = m.completedOrders || 0;
+  document.getElementById('mActive').textContent = m.activeOrders || 0;
+  document.getElementById('mTime').textContent = (m.avgFulfillmentTime || 0) + 's';
+  document.getElementById('mUtil').textContent = (m.robotUtilization || 0) + '%';
+  document.getElementById('mIPH').textContent = m.itemsPickedPerHour || 0;
+  document.getElementById('mProds').textContent = m.totalProductsInStock || 0;
+  document.getElementById('mSKUs').textContent = m.totalSKUs || 0;
+
+  if (m.stockByZone) {
+    var stockHtml = '';
+    Object.keys(m.stockByZone).forEach(function(zid) {
+      var zs = m.stockByZone[zid];
+      var zone = state.zones ? state.zones.find(function(z) { return z.id === zid; }) : null;
+      var color = zone ? zone.color : '#666';
+      stockHtml += '<div class="twin-info" style="border-left:3px solid '+color+'"><h3 style="color:'+color+'">'+(zs.name||zid)+'</h3>';
+      stockHtml += '<div class="twin-stat"><span>Products</span><span>'+zs.products+'</span></div>';
+      stockHtml += '<div class="twin-stat"><span>Stock</span><span style="color:var(--green)">'+zs.stock+'</span></div></div>';
+    });
+    document.getElementById('stockContent').innerHTML = stockHtml || '<p style="text-align:center;color:var(--text2)">No stock</p>';
+  }
+
+  if (state.robots) {
+    var rHtml = state.robots.map(function(r) {
+      var st = (r.status || 'idle').toLowerCase().replace(/[^a-z]/g,'');
+      var bc = r.battery > 50 ? 'var(--green)' : r.battery > 20 ? 'var(--orange)' : 'var(--red)';
+      var taskInfo = r.currentTask ? (r.currentTask.orderNumber || r.currentTask.orderId.slice(0,8)) : '\u2014';
+      var carried = r.itemsCarried ? r.itemsCarried.length : 0;
+      var isSelected = selectedRobotId === r.id;
+      var msg = state.robotMessages ? (state.robotMessages[r.id] || '') : '';
+      return '<div class="robot-card'+(isSelected?' selected':'')+'" data-rid="'+r.id+'">' +
+        '<div class="rc-header"><span class="rc-name"><span class="rc-dot" style="background:'+r.color+'"></span>'+r.name+'</span><span class="rc-status s-'+st+'">'+r.status+'</span></div>' +
+        (msg ? '<div class="rc-msg">\uD83D\uDCAC '+escHtml(msg)+'</div>' : '<div class="rc-msg"></div>') +
+        '<div class="rc-grid"><span>Pos ('+r.position.x+','+r.position.y+')</span><span>\uD83D\uDD0B '+Math.round(r.battery)+'%</span><span>Carrying '+carried+'</span><span>Task '+taskInfo+'</span><span>Picked '+r.totalItemsPicked+'</span><span>Done '+r.totalOrdersCompleted+'</span></div>' +
+        '<div class="batt-bar"><div class="batt-fill" style="width:'+r.battery+'%;background:'+bc+'"></div></div>' +
+        '<div class="rc-control"><button class="rc-ctrl-btn'+(isSelected?' active':'')+'" onclick="window._selectRobot(\''+r.id+'\')">\uD83C\uDFAE Control</button>' +
+        '<button class="rc-ctrl-btn" onclick="window._sendToCharge(\''+r.id+'\')">\uD83D\uDD0B Charge</button>' +
+        '<button class="rc-ctrl-btn" onclick="window._sendToPacking(\''+r.id+'\')">\uD83D\uDCE6 Pack</button></div></div>';
+    }).join('');
+    document.getElementById('tab-robots').innerHTML = rHtml;
+  }
+
+  if (state.tasks && state.tasks.length) {
+    var sorted = state.tasks.slice().sort(function(a,b) { return (b.createdAt||0)-(a.createdAt||0); }).slice(0, 20);
+    document.getElementById('tab-orders').innerHTML = sorted.map(function(t) {
+      var picked = t.items ? t.items.filter(function(i) { return i.picked; }).length : 0;
+      var total = t.items ? t.items.length : 1;
+      var pct = total > 0 ? (picked/total)*100 : 0;
+      var st = (t.status || 'queued').toLowerCase().replace(/[^a-z]/g,'');
+      var itemsHtml = t.items ? t.items.map(function(i) {
+        return '<div>'+(i.picked?'\u2713 ':'\u23F3 ')+escHtml(i.productName.substring(0,40))+' x'+i.quantity+'</div>';
+      }).join('') : '';
+      return '<div class="order-card"><div class="oc-header"><span class="oc-id">'+(t.orderNumber||t.orderId.slice(0,8))+'</span><span class="rc-status s-'+st+'">'+t.status+'</span></div><div class="oc-items">'+itemsHtml+'</div><div class="oc-progress"><div class="oc-fill" style="width:'+pct+'%"></div></div></div>';
+    }).join('');
+  } else {
+    document.getElementById('tab-orders').innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px;font-size:10px">No orders yet. Click "+ Order" to add a demo order.</p>';
+  }
+
+  if (state.actionLog && state.actionLog.length) {
+    var logHtml = state.actionLog.slice().reverse().map(function(e) {
+      var time = new Date(e.timestamp).toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      return '<div class="log-entry type-'+(e.type||'')+'"><span class="log-icon">'+(e.icon||'\uD83D\uDCCC')+'</span><div class="log-body"><div class="log-msg">'+escHtml(e.message)+'</div>'+(e.details?'<div class="log-detail">'+escHtml(e.details)+'</div>':'')+'</div><span class="log-time">'+time+'</span></div>';
+    }).join('');
+    document.getElementById('logContent').innerHTML = logHtml;
+  }
+
+  if (currentView === '3d' && state.robots) state.robots.forEach(function(r) { updateRobot3D(r); });
+  if (currentView === '2d') draw2D(state);
+}
+
+window._selectRobot = function(rid) {
+  if (selectedRobotId === rid) {
+    selectedRobotId = null;
+    document.getElementById('joystickWrap').classList.remove('active');
+    document.getElementById('joyLabel').textContent = 'No robot selected';
+  } else {
+    selectedRobotId = rid;
+    document.getElementById('joystickWrap').classList.add('active');
+    var robot = latestState ? latestState.robots.find(function(r) { return r.id === rid; }) : null;
+    document.getElementById('joyLabel').textContent = robot ? robot.name : rid;
+  }
+};
+window._sendToCharge = function(rid) { socket.emit('sendRobotToZone', { robotId: rid, zoneId: 'zone-charging' }); showToast('Sending to charging station'); };
+window._sendToPacking = function(rid) { socket.emit('sendRobotToZone', { robotId: rid, zoneId: 'zone-packing' }); showToast('Sending to packing zone'); };
+
+document.querySelectorAll('.joy-btn').forEach(function(btn) {
+  var dir = btn.dataset.dir;
+  var intervalId = null;
+  function doMove() { if (selectedRobotId) socket.emit('moveRobot', { robotId: selectedRobotId, direction: dir }); }
+  btn.addEventListener('mousedown', function(e) { e.preventDefault(); doMove(); intervalId = setInterval(doMove, 150); });
+  btn.addEventListener('mouseup', function() { clearInterval(intervalId); });
+  btn.addEventListener('mouseleave', function() { clearInterval(intervalId); });
+  btn.addEventListener('touchstart', function(e) { e.preventDefault(); doMove(); intervalId = setInterval(doMove, 150); });
+  btn.addEventListener('touchend', function() { clearInterval(intervalId); });
+});
+
+document.addEventListener('keydown', function(e) {
+  if (!selectedRobotId) return;
+  if (document.activeElement.tagName === 'INPUT') return;
+  var dir = null;
+  if (e.key === 'ArrowUp' || e.key === 'w') dir = 'up';
+  if (e.key === 'ArrowDown' || e.key === 's') dir = 'down';
+  if (e.key === 'ArrowLeft' || e.key === 'a') dir = 'left';
+  if (e.key === 'ArrowRight' || e.key === 'd') dir = 'right';
+  if (dir) { e.preventDefault(); socket.emit('moveRobot', { robotId: selectedRobotId, direction: dir }); }
+});
+
+socket.on('warehouseState', updateUI);
+socket.on('newOrder', function(d) { showToast('\uD83D\uDCE6 New order: ' + (d.task.orderNumber || '') + ' (' + d.task.items.length + ' items)'); });
+socket.on('anomalies', function(d) { if (d.anomalies && d.anomalies.length) showToast('\u26A0\uFE0F ' + d.anomalies[0], 'warn'); });
+socket.on('fulfillmentCreated', function(d) { showToast('\u2705 Fulfilled: ' + (d.orderNumber || '')); });
+
+document.querySelectorAll('.tab').forEach(function(t) {
+  t.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(x) { x.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(x) { x.classList.remove('active'); });
+    t.classList.add('active');
+    document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.view-btn').forEach(function(b) {
+  b.addEventListener('click', function() {
+    document.querySelectorAll('.view-btn').forEach(function(x) { x.classList.remove('active'); });
+    b.classList.add('active'); currentView = b.dataset.view;
+    c3d.style.display = currentView === '3d' ? 'block' : 'none';
+    c2d.style.display = currentView === '2d' ? 'block' : 'none';
+    if (currentView === '2d') { resize2D(); if (latestState) draw2D(latestState); }
+  });
+});
+
+document.querySelectorAll('.co-mode').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.co-mode').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    copilotMode = btn.dataset.mode;
+    var inp = document.getElementById('cInput');
+    inp.placeholder = copilotMode === 'command' ? 'Command robots (e.g. "Send Vegbot to Radio Stations")...' : 'Ask the AI anything...';
+    addCopilotMsg(copilotMode === 'command' ? 'Command mode active. I will parse your instructions and control robots directly. Try:\n\u2022 "Send Vegbot to Radio Stations"\n\u2022 "Send Cyberbot to check packing zone and come back"\n\u2022 "Octobot go to shelf A"\n\u2022 "Create a demo order"' : 'Chat mode. Ask me anything about warehouse performance, stock, or operations.', 'system');
+  });
+});
+
+document.getElementById('addOrderBtn').addEventListener('click', function() { socket.emit('addDemoOrder'); });
+
+document.getElementById('reportBtn').addEventListener('click', function() {
+  fetch('/api/ai/copilot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: 'Generate a full warehouse Digital Twin status report including robot performance, stock levels, and order throughput.' }) })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    document.querySelectorAll('.tab').forEach(function(x) { x.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(x) { x.classList.remove('active'); });
+    document.querySelector('[data-tab="copilot"]').classList.add('active');
+    document.getElementById('tab-copilot').classList.add('active');
+    addCopilotMsg(d.answer || 'Report received', 'ai');
+  }).catch(function() { showToast('AI Report error', 'err'); });
+});
+
+function sendCopilot() {
+  var inp = document.getElementById('cInput'), msg = inp.value.trim();
+  if (!msg) return;
+  addCopilotMsg(msg, 'user');
+  inp.value = '';
+  if (copilotMode === 'command') {
+    addCopilotMsg('Processing command...', 'system');
+    socket.emit('aiRobotCommand', { command: msg });
+  } else {
+    fetch('/api/ai/copilot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: msg }) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { addCopilotMsg(d.answer || 'No response', 'ai'); })
+    .catch(function() { addCopilotMsg('AI communication error. Check if Gemini API key is configured.', 'ai'); });
+  }
+}
+
+document.getElementById('cSend').addEventListener('click', sendCopilot);
+document.getElementById('cInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') sendCopilot(); });
+
+// ═══════════════════════════════════════════════════════
+// VOICE / MICROPHONE (Web Speech API)
+// ═══════════════════════════════════════════════════════
+
+// Check secure context first — mic requires HTTPS
+if (window.isSecureContext === false) {
+  console.error('[Voice] NOT a secure context! Mic will NOT work over HTTP.');
+  showToast('⚠ Voice requires HTTPS. Use: https://your-domain.com/warehouse/', 'warn');
+}
+
+var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+var voiceSupported = !!SpeechRecognition;
+var isRecording = false;
+var micPermissionGranted = false;
+
+function createRecognition() {
+  var rec = new SpeechRecognition();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.lang = 'en-US';
+  rec.maxAlternatives = 3;
+
+  rec.onstart = function() {
+    console.log('[Voice] Recognition started');
+    isRecording = true;
+    document.querySelectorAll('.co-mic').forEach(function(b) { b.classList.add('recording'); });
+    setVoiceStatus('\uD83C\uDFA4 Listening... speak now');
+    showToast('\uD83C\uDFA4 Listening — speak your command', '');
+    // Auto-stop after 15 seconds if no result
+    window._voiceTimeout = setTimeout(function() {
+      if (isRecording) {
+        console.log('[Voice] Timeout — stopping');
+        try { window._activeRecognition.stop(); } catch(e) {}
+        setVoiceStatus('No speech detected. Try again — speak clearly near the mic.');
+        setTimeout(function() { setVoiceStatus(''); }, 4000);
+      }
+    }, 15000);
+  };
+
+  rec.onaudiostart = function() { console.log('[Voice] Audio capture started'); };
+  rec.onsoundstart = function() { console.log('[Voice] Sound detected'); setVoiceStatus('\uD83C\uDFA4 Hearing you...'); };
+  rec.onspeechstart = function() { console.log('[Voice] Speech detected'); setVoiceStatus('\uD83C\uDFA4 Recognizing speech...'); };
+  rec.onsoundend = function() { console.log('[Voice] Sound ended'); };
+  rec.onspeechend = function() { console.log('[Voice] Speech ended'); };
+  rec.onaudioend = function() { console.log('[Voice] Audio capture ended'); };
+
+  rec.onresult = function(event) {
+    clearTimeout(window._voiceTimeout);
+    var interim = '', finalText = '';
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      var transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalText += transcript;
+        console.log('[Voice] Final: "' + transcript + '" (confidence: ' + (event.results[i][0].confidence * 100).toFixed(1) + '%)');
+      } else {
+        interim += transcript;
+      }
+    }
+    // Show interim in input field
+    if (interim) {
+      document.getElementById('cInput').value = interim;
+      var mInp = document.getElementById('cInputMobile');
+      if (mInp) mInp.value = interim;
+      setVoiceStatus('\uD83C\uDFA4 "' + interim + '"');
+    }
+    // Final result — fill input and auto-send
+    if (finalText) {
+      document.getElementById('cInput').value = finalText;
+      var mInp2 = document.getElementById('cInputMobile');
+      if (mInp2) mInp2.value = finalText;
+      setVoiceStatus('\u2705 "' + finalText + '"');
+      showToast('\uD83C\uDFA4 Voice: "' + finalText + '"', '');
+      // Stop recognition and send
+      try { rec.stop(); } catch(e) {}
+      setTimeout(function() {
+        sendCopilot();
+        setVoiceStatus('');
+      }, 300);
+    }
+  };
+
+  rec.onerror = function(event) {
+    console.error('[Voice] Error:', event.error, event.message);
+    clearTimeout(window._voiceTimeout);
+    isRecording = false;
+    document.querySelectorAll('.co-mic').forEach(function(b) { b.classList.remove('recording'); });
+    var errMsg = '';
+    switch (event.error) {
+      case 'no-speech':
+        errMsg = 'No speech detected. Speak louder or check your microphone input device.';
+        break;
+      case 'audio-capture':
+        errMsg = 'No microphone found. Connect a mic and reload.';
+        break;
+      case 'not-allowed':
+        errMsg = 'Mic blocked! Click the lock icon in the URL bar \u2192 allow microphone.';
+        micPermissionGranted = false;
+        break;
+      case 'network':
+        errMsg = 'Network error. Speech recognition needs internet.';
+        break;
+      case 'aborted':
+        errMsg = 'Voice cancelled.';
+        break;
+      case 'service-not-available':
+        errMsg = 'Speech service unavailable. Try Chrome browser.';
+        break;
+      default:
+        errMsg = 'Voice error: ' + event.error;
+    }
+    setVoiceStatus(errMsg);
+    showToast('\u26A0 ' + errMsg, 'warn');
+    setTimeout(function() { setVoiceStatus(''); }, 5000);
+  };
+
+  rec.onend = function() {
+    console.log('[Voice] Recognition ended');
+    clearTimeout(window._voiceTimeout);
+    isRecording = false;
+    document.querySelectorAll('.co-mic').forEach(function(b) { b.classList.remove('recording'); });
+  };
+
+  return rec;
+}
+
+function requestMicPermission(callback) {
+  if (micPermissionGranted) { callback(true); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Mic API not available. Use Chrome/Edge on HTTPS.', 'warn');
+    callback(false);
+    return;
+  }
+  setVoiceStatus('Requesting microphone access...');
+  // Use selected device if user picked one
+  var audioConstraints = selectedMicDeviceId ? { deviceId: { exact: selectedMicDeviceId } } : true;
+  navigator.mediaDevices.getUserMedia({ audio: audioConstraints })
+    .then(function(stream) {
+      console.log('[Voice] Mic permission granted');
+      micPermissionGranted = true;
+      stream.getTracks().forEach(function(t) { t.stop(); });
+      callback(true);
+    })
+    .catch(function(err) {
+      console.error('[Voice] Mic permission denied:', err);
+      micPermissionGranted = false;
+      setVoiceStatus('Mic access denied. Click lock icon in URL bar \u2192 allow mic.');
+      showToast('Microphone access denied. Allow it in browser settings.', 'err');
+      setTimeout(function() { setVoiceStatus(''); }, 5000);
+      callback(false);
+    });
+}
+
+function toggleVoice() {
+  if (!voiceSupported) {
+    showToast('Speech recognition not supported. Use Google Chrome or Microsoft Edge.', 'warn');
+    setVoiceStatus('Use Chrome or Edge for voice commands');
+    setTimeout(function() { setVoiceStatus(''); }, 4000);
+    return;
+  }
+
+  if (isRecording) {
+    try { window._activeRecognition.stop(); } catch(e) {}
+    setVoiceStatus('');
+    return;
+  }
+
+  // Switch to AI tab if not active
+  var aiTab = document.querySelector('[data-tab="copilot"]');
+  if (aiTab && !aiTab.classList.contains('active')) {
+    document.querySelectorAll('.tab').forEach(function(x) { x.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(x) { x.classList.remove('active'); });
+    aiTab.classList.add('active');
+    document.getElementById('tab-copilot').classList.add('active');
+  }
+
+  // Auto-switch to command mode
+  if (copilotMode !== 'command') {
+    document.querySelectorAll('.co-mode').forEach(function(b) { b.classList.remove('active'); });
+    var cmdBtn = document.querySelector('[data-mode="command"]');
+    if (cmdBtn) cmdBtn.classList.add('active');
+    copilotMode = 'command';
+    document.getElementById('cInput').placeholder = 'Command robots (e.g. "Send Vegbot to Radio Stations")...';
+    addCopilotMsg('Voice activated \u2014 Command mode. Speak your instruction.', 'system');
+  }
+
+  // First request mic permission, then start recognition
+  requestMicPermission(function(granted) {
+    if (!granted) return;
+    try {
+      var rec = createRecognition();
+      window._activeRecognition = rec;
+      rec.start();
+      console.log('[Voice] Recognition.start() called');
+    } catch(e) {
+      console.error('[Voice] Start error:', e);
+      setVoiceStatus('Mic busy — wait a moment and try again');
+      showToast('Mic busy, try again', 'warn');
+      setTimeout(function() { setVoiceStatus(''); }, 3000);
+    }
+  });
+}
+
+function setVoiceStatus(msg) {
+  ['voiceStatus', 'voiceStatusMobile'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.textContent = msg || ''; el.className = msg ? 'voice-status' : ''; }
+  });
+}
+
+// Check mic support on load
+if (!voiceSupported) {
+  document.querySelectorAll('.co-mic').forEach(function(b) { b.disabled = true; b.title = 'Voice not supported — use Chrome or Edge'; });
+  console.warn('[Voice] SpeechRecognition API not available in this browser');
+} else {
+  console.log('[Voice] SpeechRecognition API available');
+}
+document.getElementById('cMic').addEventListener('click', toggleVoice);
+document.getElementById('cMicMobile').addEventListener('click', toggleVoice);
+
+// ── MIC DEVICE SELECTOR & TEST ──
+var selectedMicDeviceId = null;
+var micTestStream = null;
+
+function enumerateMics() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  // Need to get permission first to see device labels
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    stream.getTracks().forEach(function(t) { t.stop(); });
+    return navigator.mediaDevices.enumerateDevices();
+  }).then(function(devices) {
+    var select = document.getElementById('micDeviceSelect');
+    if (!select) return;
+    var mics = devices.filter(function(d) { return d.kind === 'audioinput'; });
+    select.innerHTML = '';
+    if (mics.length === 0) {
+      select.innerHTML = '<option value="">No microphones found</option>';
+      return;
+    }
+    mics.forEach(function(mic, i) {
+      var opt = document.createElement('option');
+      opt.value = mic.deviceId;
+      opt.textContent = mic.label || ('Microphone ' + (i + 1));
+      select.appendChild(opt);
+    });
+    console.log('[Voice] Found ' + mics.length + ' microphone(s):', mics.map(function(m) { return m.label; }));
+    document.getElementById('micSelectRow').style.display = 'flex';
+  }).catch(function(e) { console.warn('[Voice] Cannot enumerate devices:', e); });
+}
+
+function testMic() {
+  // Stop any existing test
+  if (micTestStream) {
+    micTestStream.getTracks().forEach(function(t) { t.stop(); });
+    micTestStream = null;
+    document.getElementById('micLevelBar').style.display = 'none';
+    document.getElementById('micTestBtn').textContent = '\ud83d\udd0a Test';
+    if (window._micTestInterval) clearInterval(window._micTestInterval);
+    return;
+  }
+
+  var sel = document.getElementById('micDeviceSelect');
+  var deviceId = sel ? sel.value : undefined;
+  var constraints = { audio: deviceId ? { deviceId: { exact: deviceId } } : true };
+
+  navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+    micTestStream = stream;
+    document.getElementById('micLevelBar').style.display = 'block';
+    document.getElementById('micTestBtn').textContent = '\u23f9 Stop';
+
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    var source = audioCtx.createMediaStreamSource(stream);
+    var analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+    var dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    window._micTestInterval = setInterval(function() {
+      if (!micTestStream) {
+        clearInterval(window._micTestInterval);
+        source.disconnect();
+        audioCtx.close();
+        return;
+      }
+      analyser.getByteTimeDomainData(dataArray);
+      var maxVal = 0;
+      for (var i = 0; i < dataArray.length; i++) {
+        var v = Math.abs(dataArray[i] - 128);
+        if (v > maxVal) maxVal = v;
+      }
+      var pct = Math.min(100, (maxVal / 128) * 100 * 2);
+      var fill = document.getElementById('micLevelFill');
+      fill.style.width = pct + '%';
+      fill.style.background = pct > 5 ? 'var(--green)' : 'var(--red)';
+    }, 50);
+
+    setVoiceStatus('Speaking? Watch the green bar. If it moves, mic is working!');
+    setTimeout(function() { setVoiceStatus(''); }, 4000);
+
+  }).catch(function(e) {
+    console.error('[Voice] Mic test failed:', e);
+    showToast('Mic test failed: ' + e.message, 'warn');
+  });
+}
+
+document.getElementById('micDeviceSelect').addEventListener('change', function() {
+  selectedMicDeviceId = this.value;
+  console.log('[Voice] Selected mic device:', this.value);
+  // Stop any running test
+  if (micTestStream) testMic();
+});
+document.getElementById('micTestBtn').addEventListener('click', testMic);
+
+// Auto-enumerate on load
+if (voiceSupported) enumerateMics();
+
+socket.on('copilotAnswer', function(data) {
+  var msgs = document.getElementById('cMsgs');
+  var systemMsgs = msgs.querySelectorAll('.co-msg.system');
+  if (systemMsgs.length > 0) {
+    var last = systemMsgs[systemMsgs.length - 1];
+    if (last.textContent.includes('Processing')) last.remove();
+  }
+  addCopilotMsg(data.answer || 'Command processed', 'ai');
+  var mc = document.getElementById('cMsgsMobile');
+  if (mc) { var d = document.createElement('div'); d.className = 'co-msg ai'; d.textContent = data.answer || ''; mc.appendChild(d); mc.scrollTop = mc.scrollHeight; }
+});
+
+function addCopilotMsg(text, type) {
+  var c = document.getElementById('cMsgs');
+  var d = document.createElement('div');
+  d.className = 'co-msg ' + type;
+  d.textContent = text;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+  while (c.children.length > 50) c.removeChild(c.firstChild);
+}
+
+function showToast(msg, type) {
+  var c = document.getElementById('toasts');
+  var t = document.createElement('div');
+  t.className = 'toast';
+  if (type === 'warn') t.style.borderLeft = '3px solid var(--orange)';
+  if (type === 'err') t.style.borderLeft = '3px solid var(--red)';
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(function() { if (t.parentNode) t.remove(); }, 5000);
+}
+
+document.getElementById('legend').innerHTML = [
+  {c:'#3B82F6',l:'Radio'},{c:'#EF4444',l:'CCTV'},{c:'#F59E0B',l:'Electric'},
+  {c:'#10B981',l:'Security'},{c:'#8B5CF6',l:'Smart Home'},{c:'#EC4899',l:'Auto'},
+  {c:'#06B6D4',l:'Photo'},{c:'#F97316',l:'Home'},{c:'#14B8A6',l:'Health'},
+  {c:'#A855F7',l:'Phones'},{c:'#D946EF',l:'Tools'},{c:'#78716C',l:'Misc'},
+  {c:'#F97316',l:'Pack'},{c:'#0EA5E9',l:'Ship'},{c:'#EF4444',l:'Charge'}
+].map(function(i) { return '<div class="chip"><div class="chip-dot" style="background:'+i.c+'"></div>'+i.l+'</div>'; }).join('');
+
+document.querySelectorAll('.mobile-nav-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var panelId = btn.dataset.panel;
+    var panel = document.getElementById(panelId);
+    var isActive = panel.classList.contains('active');
+    document.querySelectorAll('.mobile-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.mobile-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (!isActive) {
+      panel.classList.add('active'); btn.classList.add('active');
+      if (panelId === 'm-robots') panel.innerHTML = document.getElementById('tab-robots').innerHTML;
+      if (panelId === 'm-orders') panel.innerHTML = document.getElementById('tab-orders').innerHTML;
+      if (panelId === 'm-log') panel.innerHTML = document.getElementById('logContent').innerHTML;
+    }
+  });
+});
+
+function sendCopilotMobile() {
+  var inp = document.getElementById('cInputMobile'), msg = inp.value.trim();
+  if (!msg) return;
+  var mc = document.getElementById('cMsgsMobile');
+  var d = document.createElement('div'); d.className = 'co-msg user'; d.textContent = msg;
+  mc.appendChild(d); mc.scrollTop = mc.scrollHeight;
+  inp.value = '';
+  socket.emit('aiRobotCommand', { command: msg });
+}
+document.getElementById('cSendMobile').addEventListener('click', sendCopilotMobile);
+document.getElementById('cInputMobile').addEventListener('keypress', function(e) { if (e.key === 'Enter') sendCopilotMobile(); });
+
+c2d.style.display = 'none';
+init3D();
+animate3D();
+
+window.addEventListener('resize', function() {
+  if (camera && renderer) {
+    camera.aspect = c3d.clientWidth / c3d.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(c3d.clientWidth, c3d.clientHeight);
+  }
+  resize2D();
+});
+})();
+</script>
+</body>
+</html>

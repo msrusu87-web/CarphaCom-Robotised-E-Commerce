@@ -1,0 +1,48 @@
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  basePath: "/app",
+  
+  // Image optimization configuration
+  images: {
+    unoptimized: true, // Disable image optimization to avoid 400 errors
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'your-cdn.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'admin.your-cdn.com',
+      },
+    ],
+  },
+  
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["YOUR_PNI_USERNAMEtrafic.ro", "www.YOUR_PNI_USERNAMEtrafic.ro"],
+      bodySizeLimit: '50mb',
+    },
+  },
+  
+  // Unique build ID for cache busting
+  generateBuildId: async () => {
+    return `build-${Date.now()}`
+  },
+  
+  // No-cache headers for all routes
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Cache-Control", value: "private, no-cache, no-store, must-revalidate, max-age=0" },
+          { key: "Pragma", value: "no-cache" },
+          { key: "Expires", value: "-1" },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;

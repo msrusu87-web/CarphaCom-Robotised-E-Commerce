@@ -1,0 +1,123 @@
+{
+  "globalTVA": 19,
+  "fixedShippingRate": 30,
+  "freeShippingThreshold": 600,
+  "fixedRateEnabled": true,
+  "pickupEnabled": true,
+  "pickupAddress": "Calea Unirii nr 35, Suceava",
+  "pickupSchedule": "Luni-Vineri: 09:00-18:00",
+  "shippingMode": "fixed",
+  "couriers": [
+    {
+      "id": "fancourier",
+      "name": "FAN Courier",
+      "logo": "📦",
+      "isActive": false,
+      "basePrice": 20,
+      "freeThreshold": 200,
+      "estimatedDays": "1-2",
+      "apiUrl": "https://api.fancourier.ro",
+      "clientId": "",
+      "apiKey": "",
+      "apiSecret": "",
+      "hasApi": false,
+      "tiers": {
+        "1kg": 15,
+        "2kg": 18,
+        "5kg": 22,
+        "10kg": 28,
+        "20kg": 35,
+        "31kg": 45
+      }
+    },
+    {
+      "id": "cargus",
+      "name": "Urgent Cargus",
+      "logo": "🚚",
+      "isActive": false,
+      "basePrice": 18,
+      "freeThreshold": 250,
+      "estimatedDays": "1-3",
+      "apiUrl": "https://cargus.ro/api",
+      "clientId": "",
+      "apiKey": "",
+      "apiSecret": "",
+      "hasApi": false,
+      "tiers": {
+        "1kg": 14,
+        "2kg": 17,
+        "5kg": 20,
+        "10kg": 26,
+        "20kg": 32,
+        "31kg": 40
+      }
+    },
+    {
+      "id": "sameday",
+      "name": "Sameday",
+      "logo": "⚡",
+      "isActive": false,
+      "basePrice": 25,
+      "freeThreshold": 150,
+      "estimatedDays": "0-1",
+      "apiUrl": "https://api.sameday.ro",
+      "clientId": "",
+      "apiKey": "",
+      "apiSecret": "",
+      "hasApi": false,
+      "tiers": {
+        "1kg": 20,
+        "2kg": 23,
+        "5kg": 28,
+        "10kg": 35,
+        "20kg": 45,
+        "31kg": 55
+      }
+    },
+    {
+      "id": "gls",
+      "name": "GLS Romania",
+      "logo": "📬",
+      "isActive": false,
+      "basePrice": 22,
+      "freeThreshold": 300,
+      "estimatedDays": "2-4",
+      "apiUrl": "https://api.gls-group.eu",
+      "clientId": "",
+      "apiKey": "",
+      "apiSecret": "",
+      "hasApi": false,
+      "tiers": {
+        "1kg": 16,
+        "2kg": 19,
+        "5kg": 24,
+        "10kg": 30,
+        "20kg": 38,
+        "31kg": 48
+      }
+    },
+    {
+      "id": "dpd",
+      "name": "DPD Romania",
+      "logo": "🔴",
+      "isActive": false,
+      "basePrice": 21,
+      "freeThreshold": 280,
+      "estimatedDays": "1-3",
+      "apiUrl": "https://api.dpd.ro",
+      "clientId": "",
+      "apiKey": "",
+      "apiSecret": "",
+      "hasApi": false,
+      "tiers": {
+        "1kg": 15,
+        "2kg": 18,
+        "5kg": 23,
+        "10kg": 29,
+        "20kg": 36,
+        "31kg": 46
+      }
+    }
+  ],
+  "updatedAt": "2026-02-12T12:22:54.918Z"
+}

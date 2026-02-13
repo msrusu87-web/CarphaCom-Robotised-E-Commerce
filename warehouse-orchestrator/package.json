@@ -1,0 +1,29 @@
+{
+  "name": "carphacom-warehouse-orchestrator",
+  "version": "1.0.0",
+  "description": "AI-Powered Warehouse Robotics Orchestrator for CarphaCom E-Commerce",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "pg": "^8.18.0",
+    "socket.io": "^4.8.0",
+    "three": "^0.182.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/pg": "^8.16.0",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

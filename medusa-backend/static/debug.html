@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Debug Console</title>
+  <style>
+    body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
+    .test { margin: 10px 0; padding: 10px; background: #16213e; border-radius: 5px; }
+    .success { border-left: 3px solid #00ff00; }
+    .error { border-left: 3px solid #ff0000; }
+    .pending { border-left: 3px solid #ffff00; }
+    pre { background: #0f3460; padding: 10px; overflow-x: auto; }
+    h1 { color: #e94560; }
+    button { background: #e94560; color: white; border: none; padding: 10px 20px; cursor: pointer; margin: 5px; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Admin API Debug Console</h1>
+  <p>Open F12 Console to see detailed logs</p>
+  
+  <button onclick="testInvoices()">Test /admin/invoices</button>
+  <button onclick="testOrders()">Test /admin/orders</button>
+  <button onclick="testAuth()">Test Auth Status</button>
+  <button onclick="runAllTests()">Run All Tests</button>
+  
+  <div id="results"></div>
+  
+  <script>
+    const log = (msg, type = 'info') => {
+      console.log(`[${type.toUpperCase()}]`, msg);
+      const div = document.createElement('div');
+      div.className = `test ${type === 'error' ? 'error' : type === 'success' ? 'success' : 'pending'}`;
+      div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${msg}`;
+      document.getElementById('results').prepend(div);
+    };
+
+    async function testEndpoint(path, name) {
+      log(`Testing ${name}...`, 'pending');
+      try {
+        const res = await fetch(path, { credentials: 'include' });
+        const data = await res.json();
+        console.log(`Response from ${path}:`, data);
+        
+        if (res.ok) {
+          if (data.invoices) {
+            log(`✅ ${name}: Found ${data.invoices.length} invoices`, 'success');
+            data.invoices.forEach(inv => {
+              log(`   📄 ${inv.invoice_number} - ${inv.status} - ${inv.total} ${inv.currency_code}`, 'success');
+            });
+          } else if (data.orders) {
+            log(`✅ ${name}: Found ${data.orders.length} orders`, 'success');
+          } else {
+            log(`✅ ${name}: ${JSON.stringify(data).substring(0, 100)}`, 'success');
+          }
+        } else {
+          log(`❌ ${name}: ${res.status} - ${data.message || JSON.stringify(data)}`, 'error');
+        }
+      } catch(e) {
+        log(`❌ ${name}: ${e.message}`, 'error');
+      }
+    }
+
+    async function testInvoices() { await testEndpoint('/admin/invoices', 'Invoices API'); }
+    async function testOrders() { await testEndpoint('/admin/orders', 'Orders API'); }
+    async function testAuth() { await testEndpoint('/admin/users/me', 'Auth Status'); }
+    
+    async function runAllTests() {
+      log('🚀 Running all tests...', 'pending');
+      await testAuth();
+      await testInvoices();
+      await testOrders();
+      log('✅ All tests complete!', 'success');
+    }
+  </script>
+</body>
+</html>
