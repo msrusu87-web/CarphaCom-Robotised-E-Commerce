@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { generateAndSaveBlogPost, autoGenerateProductBlog, getBlogCategoriesForGenerator } from "@lib/ai/blog-generator"
 
 // Secret key for API authentication
-const API_SECRET = "CBRadio2026GeneratorKey"
+const API_SECRET = "YOUR_AUTOBLOG_SECRET_KEY"
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,11 +16,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { mode, topic, category, keywords, tone, length } = body
+    const { mode, topic, category, keywords, tone, length, ai_model } = body
 
     // AUTO MODE: Pick random product → generate promotional blog post
     if (mode === "auto") {
-      const result = await autoGenerateProductBlog()
+      const result = await autoGenerateProductBlog(ai_model)
 
       if (!result.success) {
         return NextResponse.json(
@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
       category,
       keywords: keywords || [],
       tone: tone || "informative",
-      length: length || "medium"
+      length: length || "medium",
+      ai_model,
     })
 
     if (!result.success) {

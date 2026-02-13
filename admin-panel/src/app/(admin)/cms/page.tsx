@@ -28,7 +28,7 @@ const statusBadge = (s: string) => s === 'published' ? 'bg-emerald-100 text-emer
 const statusLabel = (s: string) => s === 'published' ? 'Published' : s === 'draft' ? 'Draft' : s
 const proxyImg = (url: string) => {
   if (!url) return ''
-  if (url.startsWith('/') || url.includes('YOUR_PNI_USERNAMEtrafic.ro/static')) return url
+  if (url.startsWith('/') || url.includes('statiiinfotrafic.ro/static')) return url
   return `/app/api/cms/image-proxy?url=${encodeURIComponent(url)}`
 }
 const widgetTypeIcons: Record<string, string> = {
@@ -409,7 +409,7 @@ export default function CMSPageComponent() {
                     <td className="lg:px-6 lg:py-3.5 text-sm text-gray-500 hidden lg:table-cell">{fmtDate(page.updated_at)}</td>
                     <td className="lg:px-6 lg:py-3.5">
                       <div className="flex gap-1 mt-2 lg:mt-0">
-                        <a href={`https://YOUR_PNI_USERNAMEtrafic.ro/ro${page.slug}`} target="_blank" rel="noopener" className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Preview"><Eye className="w-4 h-4" /></a>
+                        <a href={`https://statiiinfotrafic.ro/ro${page.slug}`} target="_blank" rel="noopener" className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Preview"><Eye className="w-4 h-4" /></a>
                         <button onClick={() => setEditingPage(page)} className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Edit"><Edit className="w-4 h-4" /></button>
                         <button onClick={() => deletePage(page.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -510,7 +510,7 @@ export default function CMSPageComponent() {
                       <td className="lg:px-6 lg:py-3.5 text-sm text-gray-500 hidden lg:table-cell">{fmtDate(post.created_at)}</td>
                       <td className="lg:px-6 lg:py-3.5">
                         <div className="flex gap-1 mt-2 lg:mt-0">
-                          <a href={`https://YOUR_PNI_USERNAMEtrafic.ro/ro/blog/${post.slug}`} target="_blank" rel="noopener" className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-4 h-4" /></a>
+                          <a href={`https://statiiinfotrafic.ro/ro/blog/${post.slug}`} target="_blank" rel="noopener" className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-4 h-4" /></a>
                           <button onClick={() => setEditingPost(post)} className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg"><Edit className="w-4 h-4" /></button>
                           <button onClick={() => deletePost(post.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                         </div>
@@ -580,8 +580,8 @@ export default function CMSPageComponent() {
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
                       <div className="flex justify-between"><span className="text-gray-500">Cron Schedule</span><code className="bg-gray-200 px-2 py-0.5 rounded text-xs">{autoblogStatus.config?.cron_schedule || '0 */3 * * *'}</code></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Model AI</span><span className="font-medium">{autoblogStatus.config?.ai_model || 'groq/llama-3.3-70b'}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Language</span><span className="font-medium">Romanian</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">AI Model</span><span className="font-medium">{autoblogStatus.config?.ai_model || 'gemini/gemini-2.0-flash'}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Language</span><span className="font-medium">English</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Auto Publish</span><span className={`font-medium ${autoblogStatus.config?.auto_publish !== false ? 'text-emerald-600' : 'text-red-600'}`}>{autoblogStatus.config?.auto_publish !== false ? 'Yes' : 'No'}</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Max/zi</span><span className="font-medium">{autoblogStatus.config?.max_posts_per_day || 5}</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Generated today</span><span className="font-medium">{autoblogStatus.stats?.today || 0} / {autoblogStatus.config?.max_posts_per_day || 5}</span></div>
@@ -852,7 +852,7 @@ export default function CMSPageComponent() {
             <div>
               <h4 className="font-medium text-blue-900">Widget Preview</h4>
               <p className="text-sm text-blue-700 mt-1">Widgets control the visual zones of the site. Click on 👁 for content preview or on ⚙️ for editing.</p>
-              <a href="https://YOUR_PNI_USERNAMEtrafic.ro/ro" target="_blank" rel="noopener"
+              <a href="https://statiiinfotrafic.ro/ro" target="_blank" rel="noopener"
                 className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 font-medium hover:underline">
                 <ExternalLink className="w-4 h-4" /> Open Website
               </a>
@@ -987,10 +987,18 @@ export default function CMSPageComponent() {
                     className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
               </div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Model AI</label>
-                <select value={autoblogForm.ai_model || 'groq/llama-3.3-70b'} onChange={e => setAutoblogForm({ ...autoblogForm, ai_model: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm">
-                  <option value="groq/llama-3.3-70b">Groq - Llama 3.3 70B</option>
-                  <option value="openai/gpt-4o-mini">OpenAI - GPT-4o Mini</option>
-                  <option value="openai/gpt-4o">OpenAI - GPT-4o</option>
+                <select value={autoblogForm.ai_model || 'gemini/gemini-2.0-flash'} onChange={e => setAutoblogForm({ ...autoblogForm, ai_model: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm">
+                  <optgroup label="Google Gemini">
+                    <option value="gemini/gemini-2.0-flash">⚡ Gemini 2.0 Flash (Fast, Free)</option>
+                    <option value="gemini/gemini-2.0-pro">🧠 Gemini 2.0 Pro (Advanced)</option>
+                  </optgroup>
+                  <optgroup label="Groq (LLaMA)">
+                    <option value="groq/llama-3.3-70b">Groq - Llama 3.3 70B</option>
+                  </optgroup>
+                  <optgroup label="OpenAI">
+                    <option value="openai/gpt-4o-mini">OpenAI - GPT-4o Mini</option>
+                    <option value="openai/gpt-4o">OpenAI - GPT-4o</option>
+                  </optgroup>
                 </select></div>
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 cursor-pointer">

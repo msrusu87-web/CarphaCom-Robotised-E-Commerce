@@ -12,7 +12,7 @@ const pool = new Pool({
 })
 
 const AUTOBLOG_API = 'http://localhost:8000/api/blog/generate'
-const AUTOBLOG_TOKEN = 'CBRadio2026GeneratorKey'
+const AUTOBLOG_TOKEN = 'YOUR_AUTOBLOG_SECRET_KEY'
 const LOG_FILE = '/home/ubuntu/autoblog_generate.log'
 const CRON_CHECK = '/var/run/autoblog.lock'
 
@@ -208,6 +208,7 @@ export async function POST(request: NextRequest) {
 
       // Call the storefront blog generator API
       const mode = body.mode || 'auto'
+      const aiModel = body.ai_model || config.rows[0]?.ai_model || 'gemini/gemini-2.0-flash'
       const response = await fetch(AUTOBLOG_API, {
         method: 'POST',
         headers: {
@@ -221,6 +222,7 @@ export async function POST(request: NextRequest) {
           keywords: body.keywords,
           tone: body.tone || 'informative',
           length: body.length || 'medium',
+          ai_model: aiModel,
         }),
       })
 

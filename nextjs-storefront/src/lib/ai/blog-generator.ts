@@ -14,9 +14,10 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
 })
 
-// AI API Keys
-const GROQ_API_KEY = "YOUR_GROQ_API_KEY"
-const OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
+// AI API Keys (from environment variables)
+const GROQ_API_KEY = process.env.GROQ_API_KEY || ""
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ""
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ""
 
 // ===== Types =====
 
@@ -218,17 +219,115 @@ async function callOpenAI(systemPrompt: string, userPrompt: string): Promise<str
   }
 }
 
-// Call AI with fallback
-async function callAI(systemPrompt: string, userPrompt: string): Promise<string> {
-  let result = await callGroq(systemPrompt, userPrompt)
-  
+// Call Gemini API
+async function callGemini(systemPrompt: string, userPrompt: string): Promise<string | null> {
+  if (!GEMINI_API_KEY) {
+    console.error("Gemini API key not configured")
+    return null
+  }
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 4096,
+          },
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      console.error("Gemini API error:", await response.text())
+      return null
+    }
+
+    const data = await response.json()
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null
+  } catch (error) {
+    console.error("Gemini API call failed:", error)
+    return null
+  }
+}
+
+// Call Gemini Pro model
+async function callGeminiPro(systemPrompt: string, userPrompt: string): Promise<string | null> {
+  if (!GEMINI_API_KEY) {
+    console.error("Gemini API key not configured")
+    return null
+  }
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 4096,
+          },
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      console.error("Gemini Pro API error:", await response.text())
+      return null
+    }
+
+    const data = await response.json()
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null
+  } catch (error) {
+    console.error("Gemini Pro API call failed:", error)
+    return null
+  }
+}
+
+// Call AI with model selection and fallback chain
+async function callAI(systemPrompt: string, userPrompt: string, preferredModel?: string): Promise<string> {
+  let result: string | null = null
+
+  // Try preferred model first
+  if (preferredModel) {
+    if (preferredModel.startsWith('gemini') || preferredModel.includes('gemini')) {
+      if (preferredModel.includes('pro')) {
+        result = await callGeminiPro(systemPrompt, userPrompt)
+      } else {
+        result = await callGemini(systemPrompt, userPrompt)
+      }
+    } else if (preferredModel.startsWith('openai') || preferredModel.includes('gpt')) {
+      result = await callOpenAI(systemPrompt, userPrompt)
+    } else if (preferredModel.startsWith('groq') || preferredModel.includes('llama')) {
+      result = await callGroq(systemPrompt, userPrompt)
+    }
+  }
+
+  // Fallback chain: Gemini → Groq → OpenAI
   if (!result) {
-    console.log("Groq failed, falling back to OpenAI...")
+    console.log("Preferred model failed or not set, trying fallback chain...")
+    result = await callGemini(systemPrompt, userPrompt)
+  }
+  if (!result) {
+    console.log("Gemini failed, trying Groq...")
+    result = await callGroq(systemPrompt, userPrompt)
+  }
+  if (!result) {
+    console.log("Groq failed, trying OpenAI...")
     result = await callOpenAI(systemPrompt, userPrompt)
   }
   
   if (!result) {
-    throw new Error("Both AI providers failed")
+    throw new Error("All AI providers failed (Gemini, Groq, OpenAI)")
   }
   
   return result
@@ -278,7 +377,7 @@ function parseAIJson(aiResponse: string): any {
 
 // ===== Product Blog Generator (main autoblog function) =====
 
-export async function autoGenerateProductBlog(): Promise<{
+export async function autoGenerateProductBlog(aiModel?: string): Promise<{
   success: boolean
   postId?: string
   productTitle?: string
@@ -309,7 +408,7 @@ BRAND: ${product.brand || "N/A"}
 CATEGORY: ${product.category_name || "Electronic equipment"}
 PRICE: ${priceStr || "Available on site"}
 PRODUCT DESCRIPTION: ${cleanDescription || "Quality product from the " + (product.brand || "our") + " range"}
-PRODUCT LINK: https://YOUR_PNI_USERNAMEtrafic.ro${product.product_url}
+PRODUCT LINK: https://statiiinfotrafic.ro${product.product_url}
 
 Article requirements:
 1. TITLE: Must contain the brand (${product.brand || ""}) and the product model/name. Should be attractive, Google-friendly, max 70 characters.
@@ -319,8 +418,8 @@ Article requirements:
    - Section with technical features and main advantages
    - Section "Who is this recommended for" - target audience
    - Conclusions with call-to-action to the store
-   - Include an HTML link to the product: <a href="https://YOUR_PNI_USERNAMEtrafic.ro${product.product_url}">View product in store</a>
-   - IMPORTANT: Do NOT include links to other external websites. The only allowed links are to https://YOUR_PNI_USERNAMEtrafic.ro
+   - Include an HTML link to the product: <a href="https://statiiinfotrafic.ro${product.product_url}">View product in store</a>
+   - IMPORTANT: Do NOT include links to other external websites. The only allowed links are to https://statiiinfotrafic.ro
 3. All JSON fields must be filled in
 
 Return EXACTLY this JSON format (no additional text):
@@ -335,8 +434,9 @@ Return EXACTLY this JSON format (no additional text):
 
 IMPORTANT: HTML content must be on a SINGLE LINE, without \\n. Return ONLY the JSON.`
 
-    // 4. Generate the content via AI
-    const aiResponse = await callAI(systemPrompt, userPrompt)
+    // 4. Generate the content via AI (using selected model)
+    console.log(`[AutoBlog] Using AI model: ${aiModel || 'auto (fallback chain)'}`)
+    const aiResponse = await callAI(systemPrompt, userPrompt, aiModel)
     const parsed = parseAIJson(aiResponse)
 
     if (!parsed.title || !parsed.content) {
@@ -422,8 +522,8 @@ async function pickRandomBlogCategory(): Promise<string> {
 // ===== Legacy functions (kept for manual/API usage) =====
 
 // Generate blog post using AI (topic-based, manual)
-export async function generateBlogPost(request: BlogGenerationRequest): Promise<GeneratedBlogPost> {
-  const { topic, category, keywords = [], tone = "informative", length = "medium" } = request
+export async function generateBlogPost(request: BlogGenerationRequest & { ai_model?: string }): Promise<GeneratedBlogPost> {
+  const { topic, category, keywords = [], tone = "informative", length = "medium", ai_model } = request
   
   const lengthGuide = {
     short: "500-700 words",
@@ -454,7 +554,8 @@ Return EXACTLY this JSON format (no additional text):
 
 IMPORTANT: HTML content on a SINGLE LINE. Return ONLY the JSON.`
 
-  const aiResponse = await callAI(systemPrompt, userPrompt)
+  console.log(`[Blog] Using AI model: ${ai_model || 'auto (fallback chain)'}`)
+  const aiResponse = await callAI(systemPrompt, userPrompt, ai_model)
   const parsed = parseAIJson(aiResponse)
   
   if (!parsed.title || !parsed.content) {
@@ -499,7 +600,7 @@ export async function saveBlogPost(post: GeneratedBlogPost, category: string): P
 }
 
 // Generate and save (legacy/manual)
-export async function generateAndSaveBlogPost(request: BlogGenerationRequest): Promise<{
+export async function generateAndSaveBlogPost(request: BlogGenerationRequest & { ai_model?: string }): Promise<{
   success: boolean
   postId?: string
   post?: GeneratedBlogPost
